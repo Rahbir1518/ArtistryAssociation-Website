@@ -33,7 +33,7 @@ function ParticleField() {
     <points ref={meshRef} geometry={geometry}>
       <pointsMaterial
         size={0.05}
-        color="#D4A03A"
+        color="#9187DD"
         transparent
         opacity={0.6}
         sizeAttenuation
@@ -58,6 +58,19 @@ function ThreeBackground() {
 function Navigation() {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const navRef = useRef<HTMLElement | null>(null);
+  const [navSpacerHeight, setNavSpacerHeight] = useState<number>(0);
+
+  // Theme state
+  const [theme, setTheme] = useState<'light' | 'dark'>(() => {
+    try {
+      const stored = localStorage.getItem('theme');
+      if (stored === 'dark' || stored === 'light') return stored;
+      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+    } catch (e) {
+      return 'light';
+    }
+  });
 
   useEffect(() => {
     const handleScroll = () => {
@@ -66,6 +79,29 @@ function Navigation() {
     window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
+
+  // Measure navbar height and keep a spacer so content isn't covered by the fixed nav
+  useEffect(() => {
+    function measure() {
+      const h = navRef.current?.offsetHeight || 0;
+      setNavSpacerHeight(h);
+    }
+    measure();
+    window.addEventListener('resize', measure);
+    return () => window.removeEventListener('resize', measure);
+  }, [isScrolled, isMobileMenuOpen]);
+
+  // Apply theme to html and persist
+  useEffect(() => {
+    try {
+      const root = document.documentElement;
+      if (theme === 'dark') root.classList.add('dark');
+      else root.classList.remove('dark');
+      localStorage.setItem('theme', theme);
+    } catch (e) {
+      // ignore
+    }
+  }, [theme]);
 
   const navLinks = [
     { label: 'Work', href: '#featured' },
@@ -77,15 +113,13 @@ function Navigation() {
 
   return (
     <>
-      <nav className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+      <nav ref={(el) => (navRef.current = el)} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
         isScrolled ? 'bg-artistry-dark/90 backdrop-blur-md py-4' : 'py-6'
       }`}>
         <div className="w-full px-6 lg:px-12 flex items-center justify-between">
           <a href="#" className="flex items-center gap-3">
-            <img src="/assets/mascot.png" alt="Artistry Association" className="w-10 h-10 object-contain" />
-            <span className="font-mono text-sm uppercase tracking-widest text-artistry-cream hidden sm:block">
-              Artistry Association
-            </span>
+            <img src="/assets/mascot.png" alt="Artistry Association mascot" className="w-10 h-10 object-contain" />
+            <img src="/assets/Artistry Association.png" alt="Artistry Association" className="hidden sm:block h-6 object-contain" />
           </a>
 
           {/* Desktop Navigation */}
@@ -95,6 +129,14 @@ function Navigation() {
                 {link.label}
               </a>
             ))}
+            <button
+              aria-label="Toggle theme"
+              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+              className="p-2 rounded-md text-artistry-cream hover:text-artistry-gold transition-colors"
+            >
+              <Palette className="w-5 h-5" />
+            </button>
+
             <a href="#join" className="btn-primary text-sm">
               Submit Work
             </a>
@@ -113,6 +155,9 @@ function Navigation() {
           </button>
         </div>
       </nav>
+
+      {/* spacer to prevent nav from covering content */}
+      <div aria-hidden style={{ height: navSpacerHeight }} />
 
       {/* Mobile Menu Overlay */}
       <div className={`fixed inset-0 z-40 bg-artistry-dark/98 backdrop-blur-lg transition-all duration-500 lg:hidden ${
@@ -929,12 +974,14 @@ function FooterSection() {
         <div className="grid lg:grid-cols-2 gap-16 mb-16">
           {/* Wordmark */}
           <div className="animate-item">
-            <h2 className="text-5xl lg:text-7xl font-display uppercase text-artistry-cream leading-none">
-              ARTISTRY<br />ASSOCIATION
-            </h2>
-            <img 
-              src="/assets/mascot.png" 
-              alt="Mascot" 
+            <img
+              src="/assets/Artistry Association.png"
+              alt="Artistry Association"
+              className="w-[420px] max-w-full h-auto"
+            />
+            <img
+              src="/assets/mascot.png"
+              alt="Mascot"
               className="w-24 h-24 mt-8 opacity-80"
             />
           </div>
@@ -968,7 +1015,8 @@ function FooterSection() {
         {/* Bottom Row */}
         <div className="flex flex-col lg:flex-row items-center justify-between pt-8 border-t border-white/10 animate-item">
           <p className="text-artistry-muted text-sm mb-4 lg:mb-0">
-            © 2026 Artistry Association
+            © 2026
+            <img src="/assets/Artistry Association.png" alt="Artistry Association" className="inline-block h-4 ml-2 align-middle" />
           </p>
           <div className="flex gap-8">
             <a href="#" className="text-artistry-muted hover:text-artistry-gold transition-colors text-sm">
