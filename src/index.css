@@ -1,0 +1,189 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 0 0% 4.7%;
+    --foreground: 40 20% 95%;
+    --card: 0 0% 6%;
+    --card-foreground: 40 20% 95%;
+    --popover: 0 0% 6%;
+    --popover-foreground: 40 20% 95%;
+    --primary: 43 60% 53%;
+    --primary-foreground: 0 0% 4.7%;
+    --secondary: 350 75% 24%;
+    --secondary-foreground: 40 20% 95%;
+    --muted: 0 0% 12%;
+    --muted-foreground: 30 8% 70%;
+    --accent: 43 60% 53%;
+    --accent-foreground: 0 0% 4.7%;
+    --destructive: 0 84.2% 60.2%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 0 0% 15%;
+    --input: 0 0% 15%;
+    --ring: 43 60% 53%;
+    --radius: 0.625rem;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  html {
+    scroll-behavior: auto;
+  }
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Inter', sans-serif;
+    overflow-x: hidden;
+  }
+}
+
+/* Typography */
+.font-display {
+  font-family: 'Inter', sans-serif;
+  font-weight: 800;
+  letter-spacing: -0.02em;
+}
+
+.font-mono {
+  font-family: 'IBM Plex Mono', monospace;
+}
+
+/* Custom colors */
+.bg-artistry-dark {
+  background-color: #0B0B0D;
+}
+
+.bg-artistry-crimson {
+  background-color: #6B0F1A;
+}
+
+.text-artistry-gold {
+  color: #D4A03A;
+}
+
+.bg-artistry-gold {
+  background-color: #D4A03A;
+}
+
+.border-artistry-gold {
+  border-color: #D4A03A;
+}
+
+.text-artistry-cream {
+  color: #F4F1EA;
+}
+
+.text-artistry-muted {
+  color: #B8B2AA;
+}
+
+/* Grain overlay */
+.grain-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0.04;
+  mix-blend-mode: overlay;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
+}
+
+/* Star sparkle animation */
+@keyframes sparkle {
+  0%, 100% { transform: scale(1) rotate(0deg); opacity: 1; }
+  50% { transform: scale(1.2) rotate(15deg); opacity: 0.8; }
+}
+
+.star-sparkle {
+  animation: sparkle 2s ease-in-out infinite;
+}
+
+/* Section transitions */
+.section-pinned {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+
+.card-hover:hover {
+  transform: translateY(-4px) scale(1.02);
+  box-shadow: 0 18px 50px rgba(0,0,0,0.45);
+}
+
+/* Button styles */
+.btn-primary {
+  @apply px-6 py-3 bg-artistry-gold text-artistry-dark font-semibold rounded-lg transition-all duration-300;
+}
+
+.btn-primary:hover {
+  transform: translateY(-2px) scale(1.02);
+  box-shadow: 0 8px 24px rgba(212, 160, 58, 0.3);
+}
+
+.btn-secondary {
+  @apply px-6 py-3 border border-artistry-gold text-artistry-gold font-semibold rounded-lg transition-all duration-300;
+}
+
+.btn-secondary:hover {
+  background-color: rgba(212, 160, 58, 0.1);
+  transform: translateY(-2px);
+}
+
+/* Scrollbar styling */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #0B0B0D;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #333;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #D4A03A;
+}
+
+/* Image cinematic grade */
+.img-cinematic {
+  filter: contrast(1.1) saturate(0.75);
+}
+
+/* Navigation */
+.nav-link {
+  @apply text-artistry-muted hover:text-artistry-gold transition-colors duration-300 font-mono text-sm uppercase tracking-widest;
+}
+
+/* Form inputs */
+.input-artistry {
+  @apply w-full px-4 py-3 bg-white/5 border border-white/10 rounded-lg text-artistry-cream placeholder:text-artistry-muted focus:outline-none focus:border-artistry-gold transition-colors;
+}
+
+/* Responsive text */
+.text-hero {
+  font-size: clamp(44px, 6vw, 96px);
+  line-height: 0.95;
+}
+
+.text-section {
+  font-size: clamp(34px, 4.5vw, 72px);
+  line-height: 1;
+}
