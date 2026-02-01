@@ -1,0 +1,765 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Artistry Association | Imagination into Reality</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/ScrollTrigger.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:ital,wght@0,400;0,700;1,400&family=Syne:wght@400;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-primary: #EAEAFF;
+            --bg-secondary: #FFF0F5;
+            --accent-purple: #C1B2F0;
+            --deep-purple: #2E1B4B;
+            --highlight-orange: #FF8C42;
+            --highlight-cyan: #4DFFF3;
+            --text-dark: #1a1a1a;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            cursor: none; /* Hide default cursor */
+        }
+
+        body {
+            font-family: 'Syne', sans-serif;
+            background-color: var(--bg-primary);
+            color: var(--text-dark);
+            overflow-x: hidden;
+        }
+
+        /* Custom Cursor Element */
+        #cursor-brush {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 30px;
+            height: 30px;
+            background: var(--highlight-orange);
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 9999;
+            mix-blend-mode: multiply;
+            transform: translate(-50%, -50%);
+            transition: width 0.3s, height 0.3s;
+        }
+
+        /* Navigation */
+        nav {
+            position: fixed;
+            top: 0;
+            width: 100%;
+            padding: 20px 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 100;
+            background: rgba(234, 234, 255, 0.85);
+            backdrop-filter: blur(10px);
+            border-bottom: 2px solid black;
+        }
+
+        .logo-area {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .logo-icon {
+            width: 40px;
+            height: 40px;
+            background: var(--accent-purple);
+            border-radius: 50%;
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            border: 2px solid black;
+            box-shadow: 4px 4px 0px black;
+        }
+        
+        .logo-icon::after {
+            content: '';
+            position: absolute;
+            top: -5px;
+            right: -10px;
+            width: 20px;
+            height: 20px;
+            background: var(--highlight-cyan);
+            border: 2px solid black;
+            border-radius: 50%;
+        }
+
+        .logo-text {
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            font-size: 1.2rem;
+            text-transform: uppercase;
+            letter-spacing: -0.5px;
+        }
+
+        .nav-links {
+            display: flex;
+            gap: 30px;
+            list-style: none;
+        }
+
+        .nav-links a {
+            text-decoration: none;
+            color: black;
+            font-family: 'Space Mono', monospace;
+            font-weight: 700;
+            text-transform: uppercase;
+            font-size: 0.9rem;
+            position: relative;
+            padding: 5px;
+            transition: color 0.3s;
+        }
+
+        .nav-links a::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 0%;
+            height: 2px;
+            background: var(--highlight-orange);
+            transition: width 0.3s ease;
+        }
+
+        .nav-links a:hover::after {
+            width: 100%;
+        }
+
+        /* Hero Section */
+        #hero {
+            height: 100vh;
+            width: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: hidden;
+            text-align: center;
+            padding-top: 80px;
+        }
+
+        #canvas-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 1;
+        }
+
+        .hero-content {
+            position: relative;
+            z-index: 2;
+            pointer-events: none; /* Let clicks pass through to canvas if needed */
+        }
+
+        h1 {
+            font-size: clamp(3rem, 10vw, 8rem);
+            line-height: 0.9;
+            text-transform: uppercase;
+            color: var(--deep-purple);
+            letter-spacing: -5px;
+            font-weight: 800;
+            mix-blend-mode: overlay;
+        }
+
+        .subtitle {
+            font-family: 'Space Mono', monospace;
+            background: white;
+            padding: 10px 20px;
+            border: 2px solid black;
+            display: inline-block;
+            transform: rotate(-2deg);
+            margin-top: 20px;
+            box-shadow: 5px 5px 0px var(--highlight-orange);
+            font-weight: bold;
+        }
+
+        /* Section Styling */
+        section {
+            padding: 100px 5%;
+            position: relative;
+        }
+
+        .section-title {
+            font-family: 'Space Mono', monospace;
+            font-size: 1rem;
+            border-bottom: 2px solid black;
+            padding-bottom: 10px;
+            margin-bottom: 50px;
+            text-transform: uppercase;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .section-title span {
+            background: black;
+            color: white;
+            padding: 5px 10px;
+        }
+
+        /* Featured Art Grid (Masonry-ish) */
+        #featured {
+            background-color: var(--bg-secondary);
+        }
+
+        .art-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 30px;
+        }
+
+        .art-card {
+            background: white;
+            border: 3px solid black;
+            padding: 10px;
+            box-shadow: 8px 8px 0px black;
+            transition: transform 0.3s;
+        }
+
+        .art-card:hover {
+            transform: translate(-5px, -5px);
+            box-shadow: 12px 12px 0px var(--highlight-cyan);
+        }
+
+        .art-img {
+            width: 100%;
+            height: 250px;
+            background: #ccc;
+            margin-bottom: 15px;
+            overflow: hidden;
+            position: relative;
+            border: 2px solid black;
+        }
+
+        .art-img img {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+        }
+
+        .art-meta h3 {
+            font-size: 1.5rem;
+            margin-bottom: 5px;
+            font-family: 'Space Mono', monospace;
+        }
+
+        .tag {
+            display: inline-block;
+            background: var(--accent-purple);
+            padding: 3px 8px;
+            font-size: 0.7rem;
+            font-weight: bold;
+            border: 1px solid black;
+            margin-right: 5px;
+        }
+
+        /* Timeline (Past Events) */
+        #events {
+            background: var(--deep-purple);
+            color: white;
+        }
+        
+        #events .section-title {
+            color: white;
+            border-color: white;
+        }
+
+        .timeline {
+            position: relative;
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        .timeline::after {
+            content: '';
+            position: absolute;
+            width: 4px;
+            background-color: var(--highlight-orange);
+            top: 0;
+            bottom: 0;
+            left: 50%;
+            margin-left: -2px;
+        }
+
+        .event {
+            padding: 10px 40px;
+            position: relative;
+            background-color: inherit;
+            width: 50%;
+            margin-bottom: 20px;
+        }
+
+        .event::after {
+            content: '';
+            position: absolute;
+            width: 25px;
+            height: 25px;
+            right: -17px;
+            background-color: var(--highlight-cyan);
+            border: 4px solid black;
+            top: 15px;
+            border-radius: 50%;
+            z-index: 1;
+        }
+
+        .left { left: 0; }
+        .right { left: 50%; }
+
+        .right::after { left: -16px; }
+
+        .event-content {
+            padding: 20px;
+            background-color: white;
+            color: black;
+            position: relative;
+            border: 3px solid black;
+            box-shadow: 5px 5px 0px var(--highlight-orange);
+        }
+
+        .event-content h3 { margin-bottom: 10px; font-size: 1.2rem; }
+        .date { font-family: 'Space Mono', monospace; font-size: 0.8rem; color: #666; margin-bottom: 10px; display: block;}
+
+        /* Team Section */
+        #team {
+            background: white;
+        }
+
+        .team-grid {
+            display: flex;
+            justify-content: space-around;
+            flex-wrap: wrap;
+            gap: 40px;
+        }
+
+        .member {
+            text-align: center;
+            width: 200px;
+        }
+
+        .member-avatar {
+            width: 150px;
+            height: 150px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            border: 4px solid black;
+            background: var(--bg-primary);
+            position: relative;
+            overflow: hidden;
+            box-shadow: 5px 5px 0px black;
+            transition: all 0.3s;
+        }
+
+        .member:hover .member-avatar {
+            border-radius: 10%;
+            transform: rotate(10deg);
+        }
+
+        .member h4 { font-size: 1.2rem; margin-bottom: 5px; font-family: 'Space Mono', monospace; }
+        .member p { font-size: 0.9rem; color: #555; }
+
+        /* Footer */
+        footer {
+            background: black;
+            color: white;
+            padding: 50px 5%;
+            text-align: center;
+            border-top: 10px solid var(--highlight-orange);
+        }
+
+        /* Responsive */
+        @media screen and (max-width: 768px) {
+            .timeline::after { left: 31px; }
+            .event { width: 100%; padding-left: 70px; padding-right: 25px; }
+            .event::before { left: 60px; border: medium solid white; border-width: 10px 10px 10px 0; border-color: transparent white transparent transparent; }
+            .left::after, .right::after { left: 15px; }
+            .right { left: 0%; }
+            h1 { font-size: 3rem; letter-spacing: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Custom Cursor Elements -->
+    <div id="cursor-brush"></div>
+    <canvas id="splat-canvas" style="position:fixed; top:0; left:0; width:100%; height:100%; pointer-events:none; z-index:9998;"></canvas>
+
+    <!-- Navigation -->
+    <nav>
+        <div class="logo-area">
+            <div class="logo-icon">A</div>
+            <div class="logo-text">Artistry<br>Association</div>
+        </div>
+        <ul class="nav-links">
+            <li><a href="#featured">Featured</a></li>
+            <li><a href="#events">Events</a></li>
+            <li><a href="#team">The Team</a></li>
+            <li><a href="#" style="background: var(--highlight-orange); padding: 8px 15px; border: 2px solid black; box-shadow: 3px 3px 0 black;">Join Us</a></li>
+        </ul>
+    </nav>
+
+    <!-- Hero Section -->
+    <section id="hero">
+        <div id="canvas-container"></div>
+        <div class="hero-content">
+            <h1>ARTISTRY<br>ASSOCIATION</h1>
+            <div class="subtitle">Where imagination turns into reality</div>
+        </div>
+    </section>
+
+    <!-- Featured Art Section -->
+    <section id="featured">
+        <div class="section-title">
+            <span>01</span> Featured Art of the Month
+            <span>---</span>
+        </div>
+        <div class="art-grid">
+            <div class="art-card">
+                <div class="art-img" style="background: #FFAEBC;"></div>
+                <div class="art-meta">
+                    <span class="tag">Digital</span>
+                    <h3>Neon Dreams</h3>
+                    <p>An exploration of urban solitude through vibrant gradients.</p>
+                </div>
+            </div>
+            <div class="art-card">
+                <div class="art-img" style="background: #A0E7E5;"></div>
+                <div class="art-meta">
+                    <span class="tag">Abstract</span>
+                    <h3>Fluid Forms</h3>
+                    <p>Watercolor interpretations of mathematical algorithms.</p>
+                </div>
+            </div>
+            <div class="art-card">
+                <div class="art-img" style="background: #B4F8C8;"></div>
+                <div class="art-meta">
+                    <span class="tag">3D Render</span>
+                    <h3>Poly Worlds</h3>
+                    <p>Low-poly landscapes inspired by synthwave aesthetics.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Past Events Section -->
+    <section id="events">
+        <div class="section-title">
+            <span style="background:#fff; color:#000">02</span> Past & Upcoming Events
+            <span style="color:#fff">---</span>
+        </div>
+        <div class="timeline">
+            <div class="event left">
+                <div class="event-content">
+                    <span class="date">OCT 15TH</span>
+                    <h3>Annual Gala</h3>
+                    <p>Celebrating our top contributors with a night of digital projection mapping.</p>
+                </div>
+            </div>
+            <div class="event right">
+                <div class="event-content">
+                    <span class="date">NOV 02ND</span>
+                    <h3>Z-Brush Workshop</h3>
+                    <p>Learning to sculpt high-fidelity characters for games and film.</p>
+                </div>
+            </div>
+            <div class="event left">
+                <div class="event-content">
+                    <span class="date">NOV 20TH</span>
+                    <h3>Urban Sketch Walk</h3>
+                    <p>Taking our pencils to the streets to capture the essence of the city.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Team Section -->
+    <section id="team">
+        <div class="section-title">
+            <span>03</span> Meet the Team
+            <span>---</span>
+        </div>
+        <div class="team-grid">
+            <div class="member">
+                <div class="member-avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=Felix'); background-size: cover;"></div>
+                <h4>Alex Ray</h4>
+                <p>Creative Director</p>
+            </div>
+            <div class="member">
+                <div class="member-avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=Sarah'); background-size: cover;"></div>
+                <h4>Sarah Lin</h4>
+                <p>Community Lead</p>
+            </div>
+            <div class="member">
+                <div class="member-avatar" style="background-image: url('https://api.dicebear.com/7.x/avataaars/svg?seed=John'); background-size: cover;"></div>
+                <h4>Marcus O.</h4>
+                <p>Event Organizer</p>
+            </div>
+        </div>
+    </section>
+
+    <footer>
+        <h2 style="font-family: 'Space Mono', monospace; margin-bottom: 20px;">ARTISTRY ASSOCIATION</h2>
+        <p>Creating bold visuals since 2024. Contact us at hello@artistry.org</p>
+        <div style="margin-top: 30px; font-size: 0.8rem; color: #888;">
+            Use your mouse as a brush to paint on the background!
+        </div>
+    </footer>
+
+    <script>
+        // --- 1. THREE.JS BACKGROUND (Floating Bubbles) ---
+        const container = document.getElementById('canvas-container');
+        const scene = new THREE.Scene();
+        
+        // Fog to fade out edges
+        scene.fog = new THREE.FogExp2(0xEAEAFF, 0.002);
+
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        const renderer = new THREE.WebGLRenderer({ alpha: true, antialias: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        container.appendChild(renderer.domElement);
+
+        // Lights
+        const light = new THREE.PointLight(0xFF8C42, 1, 100);
+        light.position.set(10, 10, 10);
+        scene.add(light);
+        const ambientLight = new THREE.AmbientLight(0x404040, 2); // Soft white light
+        scene.add(ambientLight);
+
+        // Geometries group
+        const group = new THREE.Group();
+        scene.add(group);
+
+        const geometry = new THREE.IcosahedronGeometry(1, 0);
+        const materials = [
+            new THREE.MeshLambertMaterial({ color: 0xC1B2F0, wireframe: false }),
+            new THREE.MeshBasicMaterial({ color: 0x4DFFF3, wireframe: true }),
+            new THREE.MeshLambertMaterial({ color: 0xFF8C42 })
+        ];
+
+        for (let i = 0; i < 50; i++) {
+            const material = materials[Math.floor(Math.random() * materials.length)];
+            const mesh = new THREE.Mesh(geometry, material);
+            
+            mesh.position.x = Math.random() * 40 - 20;
+            mesh.position.y = Math.random() * 40 - 20;
+            mesh.position.z = Math.random() * 40 - 20;
+            
+            mesh.rotation.x = Math.random() * 2 * Math.PI;
+            mesh.rotation.y = Math.random() * 2 * Math.PI;
+            
+            mesh.scale.x = mesh.scale.y = mesh.scale.z = Math.random() * 2;
+            
+            mesh.userData = {
+                velocity: new THREE.Vector3(
+                    (Math.random() - 0.5) * 0.02,
+                    (Math.random() - 0.5) * 0.02,
+                    (Math.random() - 0.5) * 0.02
+                ),
+                rotSpeed: (Math.random() - 0.5) * 0.02
+            };
+            
+            group.add(mesh);
+        }
+
+        camera.position.z = 15;
+
+        // Mouse interaction for background
+        let mouseX = 0, mouseY = 0;
+        document.addEventListener('mousemove', (event) => {
+            mouseX = (event.clientX - window.innerWidth / 2) / 100;
+            mouseY = (event.clientY - window.innerHeight / 2) / 100;
+        });
+
+        function animate3D() {
+            requestAnimationFrame(animate3D);
+
+            // Rotate entire group slightly based on mouse
+            group.rotation.y += 0.002;
+            group.rotation.x += 0.001;
+
+            camera.position.x += (mouseX - camera.position.x) * 0.05;
+            camera.position.y += (-mouseY - camera.position.y) * 0.05;
+            camera.lookAt(scene.position);
+
+            // Animate individual blobs
+            group.children.forEach(child => {
+                child.rotation.x += child.userData.rotSpeed;
+                child.rotation.y += child.userData.rotSpeed;
+                child.position.add(child.userData.velocity);
+
+                // Bounce off imaginary walls
+                if(Math.abs(child.position.x) > 20) child.userData.velocity.x *= -1;
+                if(Math.abs(child.position.y) > 20) child.userData.velocity.y *= -1;
+                if(Math.abs(child.position.z) > 20) child.userData.velocity.z *= -1;
+            });
+
+            renderer.render(scene, camera);
+        }
+        animate3D();
+
+        window.addEventListener('resize', () => {
+            camera.aspect = window.innerWidth / window.innerHeight;
+            camera.updateProjectionMatrix();
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            brushCanvas.width = window.innerWidth;
+            brushCanvas.height = window.innerHeight;
+        });
+
+        // --- 2. BRUSH STROKE INTERACTION CANVAS ---
+        const brushCanvas = document.getElementById('splat-canvas');
+        const ctx = brushCanvas.getContext('2d');
+        brushCanvas.width = window.innerWidth;
+        brushCanvas.height = window.innerHeight;
+
+        let paintStrokes = [];
+        let hue = 0;
+
+        class Stroke {
+            constructor(x, y) {
+                this.x = x;
+                this.y = y;
+                this.size = Math.random() * 15 + 5;
+                this.speedX = Math.random() * 3 - 1.5;
+                this.speedY = Math.random() * 3 - 1.5;
+                this.color = 'hsl(' + hue + ', 100%, 50%)';
+                this.life = 1.0; // Opacity/Life
+                this.decay = Math.random() * 0.02 + 0.01;
+                // Random shape type: 0=circle, 1=triangle, 2=square
+                this.type = Math.floor(Math.random() * 3);
+            }
+
+            update() {
+                this.x += this.speedX;
+                this.y += this.speedY;
+                if(this.size > 0.2) this.size -= 0.1;
+                this.life -= this.decay;
+            }
+
+            draw() {
+                ctx.fillStyle = this.color;
+                ctx.globalAlpha = this.life;
+                ctx.beginPath();
+                
+                if (this.type === 0) {
+                    // Circle
+                    ctx.arc(this.x, this.y, this.size, 0, Math.PI * 2);
+                } else if (this.type === 1) {
+                    // Triangle
+                    ctx.moveTo(this.x, this.y - this.size);
+                    ctx.lineTo(this.x + this.size, this.y + this.size);
+                    ctx.lineTo(this.x - this.size, this.y + this.size);
+                    ctx.closePath();
+                } else {
+                    // Square
+                    ctx.rect(this.x - this.size/2, this.y - this.size/2, this.size, this.size);
+                }
+                
+                ctx.fill();
+                ctx.globalAlpha = 1.0;
+            }
+        }
+
+        // Custom Cursor Follower
+        const cursor = document.getElementById('cursor-brush');
+        
+        window.addEventListener('mousemove', function(e) {
+            // Move custom cursor
+            cursor.style.left = e.x + 'px';
+            cursor.style.top = e.y + 'px';
+
+            // Add paint strokes
+            // We add multiple strokes for a "brush" feel
+            for(let i=0; i<3; i++){
+                paintStrokes.push(new Stroke(e.x, e.y));
+            }
+            hue += 2; // Cycle colors
+        });
+
+        // Click to explode paint
+        window.addEventListener('mousedown', function(e) {
+             for(let i=0; i<20; i++){
+                let s = new Stroke(e.x, e.y);
+                s.speedX = (Math.random() - 0.5) * 10;
+                s.speedY = (Math.random() - 0.5) * 10;
+                paintStrokes.push(s);
+            }
+            cursor.style.transform = "translate(-50%, -50%) scale(0.5)";
+            cursor.style.backgroundColor = "#4DFFF3";
+        });
+
+        window.addEventListener('mouseup', () => {
+            cursor.style.transform = "translate(-50%, -50%) scale(1)";
+            cursor.style.backgroundColor = "var(--highlight-orange)";
+        });
+
+        function animatePaint() {
+            ctx.clearRect(0, 0, brushCanvas.width, brushCanvas.height);
+            
+            for (let i = 0; i < paintStrokes.length; i++) {
+                paintStrokes[i].update();
+                paintStrokes[i].draw();
+                
+                // Remove dead strokes
+                if (paintStrokes[i].life <= 0 || paintStrokes[i].size <= 0.2) {
+                    paintStrokes.splice(i, 1);
+                    i--;
+                }
+            }
+            requestAnimationFrame(animatePaint);
+        }
+        animatePaint();
+
+
+        // --- 3. GSAP SCROLL ANIMATIONS ---
+        gsap.registerPlugin(ScrollTrigger);
+
+        // Animate Hero Text on Load
+        gsap.from("h1", { duration: 1.5, y: 100, opacity: 0, ease: "power4.out" });
+        gsap.from(".subtitle", { duration: 1.5, y: 50, opacity: 0, delay: 0.5, ease: "power4.out" });
+
+        // Animate Art Cards on Scroll
+        gsap.utils.toArray('.art-card').forEach((card, i) => {
+            gsap.from(card, {
+                scrollTrigger: {
+                    trigger: card,
+                    start: "top 85%",
+                },
+                y: 100,
+                opacity: 0,
+                duration: 0.8,
+                ease: "back.out(1.7)",
+                delay: i * 0.2
+            });
+        });
+
+        // Animate Timeline
+        gsap.utils.toArray('.event').forEach((ev, i) => {
+            gsap.from(ev, {
+                scrollTrigger: {
+                    trigger: ev,
+                    start: "top 80%",
+                },
+                x: i % 2 === 0 ? -50 : 50, // Alternate slide direction
+                opacity: 0,
+                duration: 1,
+                ease: "power2.out"
+            });
+        });
+
+    </script>
+</body>
+</html>

@@ -5,6 +5,7 @@ import { Canvas, useFrame } from '@react-three/fiber';
 import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { Sparkles, ArrowRight, Mail, Instagram, Palette, Users, Calendar, ChevronRight } from 'lucide-react';
+import CustomCursor from './components/CustomCursor';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -529,7 +530,7 @@ function EventsSection() {
       />
 
       {/* Title */}
-      <div ref={titleRef} className="absolute top-[6vh] left-6 lg:left-[6vw] right-6 lg:right-auto flex items-center justify-between lg:justify-start lg:gap-12">
+      <div ref={titleRef} className="absolute top-[10vh] left-6 lg:left-[6vw] right-6 lg:right-auto flex items-center justify-between lg:justify-start lg:gap-12 z-10">
         <h2 className="text-section font-display uppercase text-artistry-cream">
           PAST EVENTS
         </h2>
@@ -542,7 +543,7 @@ function EventsSection() {
       {/* Event Cards */}
       <div 
         ref={cardsRef}
-        className="absolute top-[14vh] left-6 right-6 lg:left-[6vw] lg:right-[6vw] flex flex-col lg:flex-row gap-6 lg:gap-[4vw]"
+        className="absolute top-[20vh] left-6 right-6 lg:left-[6vw] lg:right-[6vw] flex flex-col lg:flex-row gap-6 lg:gap-[4vw]"
       >
         {events.map((event, index) => (
           <div 
@@ -1080,6 +1081,9 @@ function App() {
 
   return (
     <div className="relative bg-artistry-dark min-h-screen">
+      {/* Custom Cursor with Paint Effect */}
+      <CustomCursor />
+      
       {/* Three.js Background */}
       <ThreeBackground />
       
