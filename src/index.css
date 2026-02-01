@@ -6,8 +6,9 @@
 
 @layer base {
   :root {
-    --background: 18 78% 79%; /* #FBB89D */
-    --foreground: 230 8% 12%;
+    /* --background: 255 35% 65%; #9B8DC2 - medium purple matching mascot */
+    --background: 260 20% 8%; /* #1A1520 - dark purple from test.png */
+    --foreground: 260 20% 92%; /* Light purple-tinted white for readability */
     --card: 0 0% 6%;
     --card-foreground: 40 20% 95%;
     --popover: 0 0% 6%;
@@ -67,7 +68,8 @@
 
 /* Custom colors */
 .bg-artistry-dark {
-  background-color: #FBB89D;
+  background-color: #1A1520; /* dark purple */
+  /* background-color: #9B8DC2; */ /* medium purple alternative */
 }
 
 .bg-artistry-crimson {
@@ -87,11 +89,11 @@
 }
 
 .text-artistry-cream {
-  color: #4A3D99;
+  color: #E8E4F0; /* Light lavender-white for dark backgrounds */
 }
 
 .text-artistry-muted {
-  color: #B8B2AA;
+  color: #A099B8; /* Muted purple for secondary text */
 }
 
 /* Grain overlay */
@@ -161,7 +163,7 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: #FBB89D;
+  background: #1A1520; /* dark purple */
 }
 
 ::-webkit-scrollbar-thumb {

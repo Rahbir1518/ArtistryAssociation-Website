@@ -1,0 +1,46 @@
+/* Custom Cursor Colors */
+:root {
+  --highlight-orange: #FF8C42;
+  --highlight-cyan: #4DFFF3;
+}
+
+/* Hide default cursor globally */
+*, *::before, *::after {
+  cursor: none !important;
+}
+
+/* Custom Cursor Element */
+#cursor-brush {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 30px;
+  height: 30px;
+  background: var(--highlight-orange);
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  mix-blend-mode: multiply;
+  transform: translate(-50%, -50%);
+  transition: width 0.3s, height 0.3s, transform 0.15s ease-out, background-color 0.15s ease-out;
+}
+
+/* Splat Canvas for paint effects */
+#splat-canvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+  z-index: 9998;
+}
+
+/* Cursor hover states */
+a:hover ~ #cursor-brush,
+button:hover ~ #cursor-brush,
+.cursor-hover:hover ~ #cursor-brush {
+  width: 50px;
+  height: 50px;
+  mix-blend-mode: difference;
+}
