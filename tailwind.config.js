@@ -39,11 +39,12 @@ module.exports = {
           foreground: "hsl(var(--card-foreground))",
         },
         artistry: {
-          dark: '#1A1520', // dark purple background
-          crimson: '#F3D573', // yellow accent
-          gold: '#9187DD', // purple accent
-          cream: '#E8E4F0', // light text for dark bg
-          muted: '#A099B8', // muted purple text
+          dark: 'rgb(var(--artistry-bg-rgb) / <alpha-value>)',
+          cream: 'rgb(var(--artistry-text-rgb) / <alpha-value>)',
+          muted: 'rgb(var(--artistry-muted-rgb) / <alpha-value>)',
+          ink: '#1A1520',
+          crimson: '#F3D573',
+          gold: '#9187DD',
         },
       },
       borderRadius: {

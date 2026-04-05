@@ -6,6 +6,8 @@ import { Stars } from '@react-three/drei';
 import * as THREE from 'three';
 import { Sparkles, ArrowRight, Mail, Instagram, Palette, Users, Calendar, ChevronRight } from 'lucide-react';
 import CustomCursor from './components/CustomCursor';
+import { AnimatedImageBox } from './components/AnimatedImageBox';
+import aryAndBobImg from './images/ary and bob.png';
 import './App.css';
 
 gsap.registerPlugin(ScrollTrigger);
@@ -45,7 +47,7 @@ function ParticleField() {
 
 function ThreeBackground() {
   return (
-    <div className="fixed inset-0 z-0">
+    <div className="fixed inset-0 z-0 opacity-45 dark:opacity-100 transition-opacity duration-500 pointer-events-none">
       <Canvas camera={{ position: [0, 0, 5], fov: 75 }}>
         <ambientLight intensity={0.3} />
         <ParticleField />
@@ -57,29 +59,20 @@ function ThreeBackground() {
 
 // Navigation Component
 function Navigation() {
-  const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const navRef = useRef<HTMLElement | null>(null);
   const [navSpacerHeight, setNavSpacerHeight] = useState<number>(0);
 
-  // Theme state
+  // Theme state — palette toggles light ↔ dark; default dark (original look)
   const [theme, setTheme] = useState<'light' | 'dark'>(() => {
     try {
       const stored = localStorage.getItem('theme');
       if (stored === 'dark' || stored === 'light') return stored;
-      return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+      return 'dark';
     } catch (e) {
-      return 'light';
+      return 'dark';
     }
   });
-
-  useEffect(() => {
-    const handleScroll = () => {
-      setIsScrolled(window.scrollY > 100);
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, []);
 
   // Measure navbar height and keep a spacer so content isn't covered by the fixed nav
   useEffect(() => {
@@ -90,7 +83,7 @@ function Navigation() {
     measure();
     window.addEventListener('resize', measure);
     return () => window.removeEventListener('resize', measure);
-  }, [isScrolled, isMobileMenuOpen]);
+  }, [isMobileMenuOpen]);
 
   // Apply theme to html and persist
   useEffect(() => {
@@ -114,68 +107,113 @@ function Navigation() {
 
   return (
     <>
-      <nav ref={(el) => (navRef.current = el)} className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isScrolled ? 'bg-artistry-dark/90 backdrop-blur-md py-4' : 'py-6'
-      }`}>
-        <div className="w-full px-6 lg:px-12 flex items-center justify-between">
-          <a href="#" className="flex items-center gap-3">
-            <img src="/assets/mascot.png" alt="Artistry Association mascot" className="w-10 h-10 object-contain" />
-            <img src="/assets/Artistry Association.png" alt="Artistry Association" className="hidden sm:block h-6 object-contain" />
-          </a>
-
-          {/* Desktop Navigation */}
-          <div className="hidden lg:flex items-center gap-8">
-            {navLinks.map((link) => (
-              <a key={link.label} href={link.href} className="nav-link">
-                {link.label}
-              </a>
-            ))}
-            <button
-              aria-label="Toggle theme"
-              onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
-              className="p-2 rounded-md text-artistry-cream hover:text-artistry-gold transition-colors"
-            >
-              <Palette className="w-5 h-5" />
-            </button>
-
-            <a href="#join" className="btn-primary text-sm">
-              Submit Work
+      <nav
+        ref={(el) => {
+          navRef.current = el;
+        }}
+        className="fixed top-0 left-0 right-0 z-50 px-4 pt-4 pb-2 md:pt-6 md:px-8 lg:px-12"
+      >
+        <div className="max-w-5xl mx-auto">
+          <div className="neo-nav flex flex-wrap items-center justify-between gap-y-3 gap-x-2 pl-3 pr-2 py-2 sm:pl-5 sm:pr-3 sm:py-2.5">
+            <a href="#" className="flex items-center gap-2 min-w-0 shrink-0">
+              <img
+                src="/assets/mascot.png"
+                alt=""
+                className="w-9 h-9 sm:w-10 sm:h-10 object-contain"
+              />
+              <img
+                src="/assets/Artistry Association.png"
+                alt="Artistry Association"
+                className="hidden sm:block h-6 object-contain max-w-[min(100%,200px)]"
+              />
+              <span className="w-2 h-2 rounded-full bg-pink-500 shrink-0" aria-hidden />
             </a>
-          </div>
 
-          {/* Mobile Menu Button */}
-          <button 
-            onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-            className="lg:hidden text-artistry-cream p-2"
-          >
-            <div className="space-y-1.5">
-              <span className={`block w-6 h-0.5 bg-current transition-transform ${isMobileMenuOpen ? 'rotate-45 translate-y-2' : ''}`} />
-              <span className={`block w-6 h-0.5 bg-current transition-opacity ${isMobileMenuOpen ? 'opacity-0' : ''}`} />
-              <span className={`block w-6 h-0.5 bg-current transition-transform ${isMobileMenuOpen ? '-rotate-45 -translate-y-2' : ''}`} />
+            <div className="hidden lg:flex flex-1 justify-center items-center gap-6 xl:gap-10 min-w-0">
+              {navLinks.map((link) => (
+                <a key={link.label} href={link.href} className="nav-link whitespace-nowrap">
+                  {link.label}
+                </a>
+              ))}
             </div>
-          </button>
+
+            <div className="flex items-center gap-2 shrink-0">
+              <button
+                type="button"
+                aria-label="Toggle theme"
+                onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+                className="neo-icon-btn"
+              >
+                <Palette className="w-5 h-5" />
+              </button>
+
+              <a href="#join" className="btn-primary text-sm hidden lg:inline-flex">
+                Submit Work
+              </a>
+
+              <button
+                type="button"
+                aria-label={isMobileMenuOpen ? 'Close menu' : 'Open menu'}
+                onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+                className="neo-icon-btn lg:hidden"
+              >
+                <div className="space-y-1.5 w-5">
+                  <span
+                    className={`block w-5 h-0.5 bg-neutral-900 transition-transform origin-center ${
+                      isMobileMenuOpen ? 'translate-y-[5px] rotate-45' : ''
+                    }`}
+                  />
+                  <span
+                    className={`block w-5 h-0.5 bg-neutral-900 transition-opacity ${
+                      isMobileMenuOpen ? 'opacity-0' : ''
+                    }`}
+                  />
+                  <span
+                    className={`block w-5 h-0.5 bg-neutral-900 transition-transform origin-center ${
+                      isMobileMenuOpen ? '-translate-y-[5px] -rotate-45' : ''
+                    }`}
+                  />
+                </div>
+              </button>
+            </div>
+          </div>
         </div>
       </nav>
 
-      {/* spacer to prevent nav from covering content */}
       <div aria-hidden style={{ height: navSpacerHeight }} />
 
-      {/* Mobile Menu Overlay */}
-      <div className={`fixed inset-0 z-40 bg-artistry-dark/98 backdrop-blur-lg transition-all duration-500 lg:hidden ${
-        isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-      }`}>
-        <div className="flex flex-col items-center justify-center h-full gap-8">
+      <div
+        className={`fixed inset-0 z-40 flex items-start justify-center pt-28 px-4 pb-8 lg:hidden transition-all duration-300 ${
+          isMobileMenuOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        aria-hidden={!isMobileMenuOpen}
+      >
+        <button
+          type="button"
+          className="absolute inset-0 bg-black/50"
+          aria-label="Close menu"
+          onClick={() => setIsMobileMenuOpen(false)}
+        />
+        <div
+          className={`relative z-10 w-full max-w-md neo-nav rounded-3xl px-6 py-8 flex flex-col items-center gap-6 transition-transform duration-300 ${
+            isMobileMenuOpen ? 'translate-y-0' : '-translate-y-4'
+          }`}
+        >
           {navLinks.map((link) => (
-            <a 
-              key={link.label} 
-              href={link.href} 
+            <a
+              key={link.label}
+              href={link.href}
               onClick={() => setIsMobileMenuOpen(false)}
-              className="text-2xl font-display text-artistry-cream hover:text-artistry-gold transition-colors"
+              className="text-xl font-bold text-neutral-900 hover:text-[#857bc5] transition-colors"
             >
               {link.label}
             </a>
           ))}
-          <a href="#join" onClick={() => setIsMobileMenuOpen(false)} className="btn-primary mt-4">
+          <a
+            href="#join"
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="btn-primary mt-2 w-full max-w-xs justify-center"
+          >
             Submit Work
           </a>
         </div>
@@ -188,6 +226,7 @@ function Navigation() {
 function HeroSection() {
   const sectionRef = useRef<HTMLElement>(null);
   const imageRef = useRef<HTMLDivElement>(null);
+  const imageInnerRef = useRef<HTMLDivElement>(null);
   const textRef = useRef<HTMLDivElement>(null);
   const ruleRef = useRef<HTMLDivElement>(null);
   const starRef = useRef<HTMLDivElement>(null);
@@ -200,9 +239,10 @@ function HeroSection() {
       // Auto-play entrance animation
       const tl = gsap.timeline({ defaults: { ease: 'power3.out' } });
       
-      tl.fromTo(imageRef.current, 
-        { opacity: 0, scale: 1.06 }, 
-        { opacity: 1, scale: 1, duration: 1 }
+      tl.fromTo(
+        imageInnerRef.current,
+        { opacity: 0, scale: 1.04, y: 16 },
+        { opacity: 1, scale: 1, y: 0, duration: 0.9 }
       )
       .fromTo(ruleRef.current, 
         { scaleY: 0 }, 
@@ -229,9 +269,16 @@ function HeroSection() {
           pin: true,
           scrub: 0.6,
           onLeaveBack: () => {
-            gsap.set([imageRef.current, textRef.current, ruleRef.current, starRef.current], {
-              opacity: 1, x: 0, y: 0, scale: 1, scaleY: 1
-            });
+            gsap.set(
+              [
+                imageInnerRef.current,
+                imageRef.current,
+                textRef.current,
+                ruleRef.current,
+                starRef.current,
+              ],
+              { opacity: 1, x: 0, y: 0, scale: 1, scaleY: 1 }
+            );
           }
         }
       });
@@ -261,18 +308,23 @@ function HeroSection() {
 
   return (
     <section ref={sectionRef} className="section-pinned bg-artistry-dark z-10">
-      {/* Hero Image */}
-      <div 
+      {/* Hero — Ary & Bob */}
+      <div
         ref={imageRef}
-        className="absolute left-0 top-0 w-full lg:w-[62vw] h-full"
+        className="absolute left-0 top-0 flex h-full w-full flex-col p-4 pb-6 lg:w-[62vw] lg:p-8 lg:pb-10"
       >
-        <img 
-          src="/assets/hero-group.jpg" 
-          alt="Artistry Association Team" 
-          className="w-full h-full object-cover img-cinematic"
-        />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-artistry-dark/90 lg:block hidden" />
-        <div className="absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent lg:hidden" />
+        <div
+          ref={imageInnerRef}
+          className="relative flex min-h-0 flex-1 items-center justify-center overflow-visible"
+        >
+          <img
+            src={aryAndBobImg}
+            alt="Ary and Bob"
+            className="h-full w-full max-h-full object-contain object-center [image-rendering:auto] animate-image-float"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-artistry-dark/90 lg:block hidden" />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent lg:hidden" />
+        </div>
       </div>
 
       {/* Gold Rule */}
@@ -387,13 +439,14 @@ function FeaturedSection() {
         ref={imageRef}
         className="absolute left-0 top-0 w-full lg:w-[58vw] h-full"
       >
-        <img 
-          src="/assets/featured-art.jpg" 
-          alt="Featured Artwork" 
-          className="w-full h-full object-cover img-cinematic"
+        <AnimatedImageBox
+          variant="section"
+          src="/assets/featured-art.jpg"
+          alt="Featured Artwork"
+          className="absolute inset-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-artistry-dark/90 lg:block hidden" />
-        <div className="absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent lg:hidden" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-r from-transparent via-transparent to-artistry-dark/90 lg:block hidden" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent lg:hidden" />
       </div>
 
       {/* Gold Rule */}
@@ -548,15 +601,16 @@ function EventsSection() {
         {events.map((event, index) => (
           <div 
             key={index}
-            className={`event-card flex-1 rounded-2xl overflow-hidden border border-white/10 card-hover ${
+            className={`event-card flex-1 rounded-2xl overflow-hidden neo-panel card-hover ${
               index === 1 ? 'lg:mt-8' : ''
             }`}
           >
             <div className="relative aspect-[4/5] lg:aspect-auto lg:h-[64vh]">
-              <img 
-                src={event.image} 
+              <AnimatedImageBox
+                variant="section"
+                src={event.image}
                 alt={event.title}
-                className="w-full h-full object-cover img-cinematic"
+                className="absolute inset-0"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-artistry-dark/90 via-transparent to-transparent" />
               <div className="absolute bottom-6 left-6 right-6">
@@ -643,13 +697,14 @@ function TeamSection() {
         ref={imageRef}
         className="absolute right-0 top-0 w-full lg:w-[60vw] h-full"
       >
-        <img 
-          src="/assets/team-portrait.jpg" 
-          alt="Artistry Association Team" 
-          className="w-full h-full object-cover img-cinematic"
+        <AnimatedImageBox
+          variant="section"
+          src="/assets/team-portrait.jpg"
+          alt="Artistry Association Team"
+          className="absolute inset-0"
         />
-        <div className="absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-artistry-dark/90 lg:block hidden" />
-        <div className="absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent lg:hidden" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-l from-transparent via-transparent to-artistry-dark/90 lg:block hidden" />
+        <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent lg:hidden" />
       </div>
 
       {/* Gold Rule */}
@@ -768,13 +823,14 @@ function MembersSection() {
         {members.map((member, index) => (
           <div 
             key={index}
-            className="member-card group relative rounded-xl overflow-hidden border border-white/10 card-hover"
+            className="member-card group relative rounded-xl overflow-hidden neo-panel card-hover"
           >
-            <div className="aspect-[4/5]">
-              <img 
-                src={member.image} 
+            <div className="relative aspect-[4/5]">
+              <AnimatedImageBox
+                variant="card"
+                src={member.image}
                 alt={member.name}
-                className="w-full h-full object-cover img-cinematic transition-transform duration-500 group-hover:scale-105"
+                className="absolute inset-0"
               />
             </div>
             <div className="absolute inset-0 bg-gradient-to-t from-artistry-dark via-transparent to-transparent opacity-80" />
@@ -1014,7 +1070,7 @@ function FooterSection() {
         </div>
 
         {/* Bottom Row */}
-        <div className="flex flex-col lg:flex-row items-center justify-between pt-8 border-t border-white/10 animate-item">
+        <div className="flex flex-col lg:flex-row items-center justify-between pt-8 border-t-artistry-subtle animate-item">
           <p className="text-artistry-muted text-sm mb-4 lg:mb-0">
             © 2026
             <img src="/assets/Artistry Association.png" alt="Artistry Association" className="inline-block h-4 ml-2 align-middle" />
