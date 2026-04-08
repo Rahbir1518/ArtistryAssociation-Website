@@ -1,7 +1,8 @@
-/* Custom Cursor Colors */
+/* Neo-brutalist custom cursor — flat square, hard shadow, high contrast */
 :root {
-  --highlight-orange: #FF8C42;
-  --highlight-cyan: #4DFFF3;
+  --cursor-brutal-border: #0a0a0a;
+  --cursor-brutal-fill: #ffffff;
+  --cursor-brutal-accent: #ff8c42;
 }
 
 /* Hide default cursor globally */
@@ -9,38 +10,41 @@
   cursor: none !important;
 }
 
-/* Custom Cursor Element */
 #cursor-brush {
   position: fixed;
   top: 0;
   left: 0;
-  width: 30px;
-  height: 30px;
-  background: var(--highlight-orange);
-  border-radius: 50%;
+  width: 18px;
+  height: 18px;
+  margin: 0;
+  padding: 0;
+  background: var(--cursor-brutal-fill);
+  border: 2px solid var(--cursor-brutal-border);
+  border-radius: 0;
+  box-shadow: 3px 3px 0 0 var(--cursor-brutal-border);
   pointer-events: none;
   z-index: 9999;
-  mix-blend-mode: multiply;
   transform: translate(-50%, -50%);
-  transition: width 0.3s, height 0.3s, transform 0.15s ease-out, background-color 0.15s ease-out;
+  transition:
+    width 0.1s ease,
+    height 0.1s ease,
+    background-color 0.1s ease,
+    box-shadow 0.1s ease,
+    transform 0.05s ease;
 }
 
-/* Splat Canvas for paint effects */
-#splat-canvas {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  pointer-events: none;
-  z-index: 9998;
+#cursor-brush[data-hover] {
+  width: 26px;
+  height: 26px;
+  background: var(--cursor-brutal-accent);
+  box-shadow: 5px 5px 0 0 var(--cursor-brutal-border);
 }
 
-/* Cursor hover states */
-a:hover ~ #cursor-brush,
-button:hover ~ #cursor-brush,
-.cursor-hover:hover ~ #cursor-brush {
-  width: 50px;
-  height: 50px;
-  mix-blend-mode: difference;
+#cursor-brush[data-pressed] {
+  transform: translate(calc(-50% + 2px), calc(-50% + 2px));
+  box-shadow: 1px 1px 0 0 var(--cursor-brutal-border);
+}
+
+#cursor-brush[data-hover][data-pressed] {
+  box-shadow: 2px 2px 0 0 var(--cursor-brutal-border);
 }
