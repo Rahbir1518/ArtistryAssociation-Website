@@ -1,50 +1,37 @@
-/* Neo-brutalist custom cursor — flat square, hard shadow, high contrast */
-:root {
-  --cursor-brutal-border: #0a0a0a;
-  --cursor-brutal-fill: #ffffff;
-  --cursor-brutal-accent: #ff8c42;
-}
-
-/* Hide default cursor globally */
-*, *::before, *::after {
-  cursor: none !important;
-}
+/* Minimal ring cursor — token colours only, fine pointers only */
 
 #cursor-brush {
   position: fixed;
   top: 0;
   left: 0;
-  width: 18px;
-  height: 18px;
-  margin: 0;
-  padding: 0;
-  background: var(--cursor-brutal-fill);
-  border: 2px solid var(--cursor-brutal-border);
-  border-radius: 0;
-  box-shadow: 3px 3px 0 0 var(--cursor-brutal-border);
+  width: 22px;
+  height: 22px;
+  border: 1px solid rgb(var(--violet-600-rgb) / 0.55);
+  border-radius: 999px;
+  background: rgb(var(--violet-600-rgb) / 0.06);
   pointer-events: none;
-  z-index: 9999;
+  z-index: 9998;
   transform: translate(-50%, -50%);
-  transition:
-    width 0.1s ease,
-    height 0.1s ease,
-    background-color 0.1s ease,
-    box-shadow 0.1s ease,
-    transform 0.05s ease;
+  transition: width 200ms var(--ease), height 200ms var(--ease),
+    border-color 200ms var(--ease), background-color 200ms var(--ease),
+    opacity 200ms var(--ease);
 }
 
 #cursor-brush[data-hover] {
-  width: 26px;
-  height: 26px;
-  background: var(--cursor-brutal-accent);
-  box-shadow: 5px 5px 0 0 var(--cursor-brutal-border);
+  width: 40px;
+  height: 40px;
+  border-color: rgb(var(--cyan-rgb) / 0.8);
+  background: rgb(var(--cyan-rgb) / 0.1);
 }
 
 #cursor-brush[data-pressed] {
-  transform: translate(calc(-50% + 2px), calc(-50% + 2px));
-  box-shadow: 1px 1px 0 0 var(--cursor-brutal-border);
+  width: 18px;
+  height: 18px;
 }
 
-#cursor-brush[data-hover][data-pressed] {
-  box-shadow: 2px 2px 0 0 var(--cursor-brutal-border);
+/* Never take over the pointer on touch devices or when motion is reduced */
+@media (pointer: coarse), (prefers-reduced-motion: reduce) {
+  #cursor-brush {
+    display: none;
+  }
 }

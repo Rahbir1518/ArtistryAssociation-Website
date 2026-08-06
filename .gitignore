@@ -12,6 +12,9 @@ dist
 dist-ssr
 *.local
 
+# Local visual-regression scratch (screenshots + capture scripts)
+.shots
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
