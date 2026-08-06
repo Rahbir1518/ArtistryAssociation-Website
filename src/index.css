@@ -72,6 +72,10 @@
     /* ---- Motion ---- */
     --ease: cubic-bezier(0.22, 1, 0.36, 1);
     --dur: 300ms;
+    /* Even in and out — used where a layout property animates and an expo tail
+       would show up as stepping */
+    --ease-nav: cubic-bezier(0.45, 0.05, 0.2, 1);
+    --nav-dur: 400ms;
 
     /* ---- shadcn/ui primitive layer, retuned to the tokens above ---- */
     --background: 249 41% 97%;
@@ -193,8 +197,10 @@
   line-height: 0.9;
 }
 
+/* The floor sits below --step-5 so single long words ("IMAGINATION") still fit a
+   320px viewport — display faces do not break mid-word */
 .text-section {
-  font-size: clamp(var(--step-5), 6vw, var(--step-6));
+  font-size: clamp(34px, 6vw, var(--step-6));
 }
 
 .text-card-title {
@@ -336,30 +342,60 @@
   pointer-events: none;
 }
 
+/* The collapse is deliberately transform-only. max-width / padding / gap are layout
+   properties: animating them re-runs layout for the pill and every child on the main
+   thread each frame, and over the hero that thread is already carrying the cursor
+   rAF, the blended grain overlay and ambient-zoom. Dropped frames there read as
+   stepping. A scale runs on the compositor and cannot be starved by any of it. */
 .nav-pill {
   pointer-events: auto;
-  max-width: 1280px;
+  max-width: 1320px;
   margin-inline: auto;
   display: flex;
   align-items: center;
   gap: 16px;
   padding: 10px 12px 10px 20px;
   border-radius: 999px;
-  background: rgb(var(--white-rgb) / 0.92);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
+  /* Solid rather than frosted: a backdrop blur has to re-sample its backdrop every
+     frame, and the backdrop here is a full-bleed image that is itself always
+     animating. At 97% white the blur was doing almost no visible work anyway. */
+  background: rgb(var(--white-rgb) / 0.97);
   border: 1px solid rgb(var(--ink-900-rgb) / 0.06);
   box-shadow: 0 8px 32px rgb(var(--ink-900-rgb) / 0.08);
-  transition: padding 250ms var(--ease), box-shadow 250ms var(--ease),
-    backdrop-filter 250ms var(--ease), background-color 250ms var(--ease);
+  transform-origin: top center;
+  transform: scale(1) translateZ(0);
+  /* Promoted up front so the first frame of the collapse is not also the frame that
+     creates the layer */
+  will-change: transform;
+  transition: transform var(--nav-dur) var(--ease-nav),
+    box-shadow var(--nav-dur) var(--ease-nav), background-color var(--nav-dur) var(--ease-nav);
 }
 
+/* Past the hero the bar draws in and settles toward the top edge */
 .nav-pill[data-scrolled='true'] {
-  padding-block: 6px;
-  background: rgb(var(--white-rgb) / 0.96);
-  backdrop-filter: blur(28px);
-  -webkit-backdrop-filter: blur(28px);
-  box-shadow: 0 10px 38px rgb(var(--ink-900-rgb) / 0.13);
+  transform: scale(0.88) translateY(-6px);
+  background: rgb(var(--white-rgb) / 0.99);
+  box-shadow: 0 14px 44px rgb(var(--ink-900-rgb) / 0.16);
+}
+
+.nav-logo {
+  height: 34px;
+  width: 34px;
+  object-fit: contain;
+}
+
+.nav-wordmark {
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-pill {
+    transition: background-color 200ms linear, box-shadow 200ms linear;
+  }
+
+  .nav-pill[data-scrolled='true'] {
+    transform: none;
+  }
 }
 
 .nav-link {
@@ -674,7 +710,6 @@
 
 .event-parallax {
   flex: 0 0 auto;
-  will-change: transform;
 }
 
 /* Heading stays pinned on the left while the cards pass behind it */
@@ -1113,6 +1148,139 @@
 .footer-input:focus {
   border-color: var(--violet-300);
   background: rgb(var(--violet-300-rgb) / 0.12);
+}
+
+/* ------------------------------------------------------------------ *
+ * Legal pages — Code of Conduct, Privacy
+ * ------------------------------------------------------------------ */
+
+.legal-shell {
+  max-width: 780px;
+  margin-inline: auto;
+  padding: 148px 24px 120px;
+}
+
+@media (min-width: 900px) {
+  .legal-shell {
+    padding: 180px 32px 160px;
+  }
+}
+
+.legal-back {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 500;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: var(--text-meta);
+  transition: color var(--dur) var(--ease), gap var(--dur) var(--ease);
+}
+
+.legal-back:hover {
+  color: var(--violet-600);
+  gap: 12px;
+}
+
+.legal-head {
+  margin-top: 40px;
+  padding-bottom: 48px;
+  border-bottom: 1px solid var(--hairline);
+}
+
+.legal-head .body-lg {
+  max-width: 62ch;
+}
+
+/* Each clause is numbered in the margin on wide screens, inline on narrow —
+   the same monospace metadata role used across the site */
+.legal-section {
+  position: relative;
+  margin-top: 56px;
+}
+
+.legal-index {
+  color: var(--violet-300);
+}
+
+@media (min-width: 1080px) {
+  .legal-index {
+    position: absolute;
+    left: -72px;
+    top: 6px;
+  }
+}
+
+.legal-h {
+  font-family: var(--font-display);
+  font-size: var(--step-3);
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  text-transform: uppercase;
+  color: var(--text-strong);
+  margin-top: 10px;
+}
+
+.legal-p {
+  margin-top: 16px;
+  max-width: 66ch;
+  font-size: var(--step-2);
+  line-height: 1.75;
+  color: var(--text-body);
+}
+
+.legal-list {
+  margin-top: 18px;
+  max-width: 66ch;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.legal-list li {
+  position: relative;
+  padding-left: 26px;
+  font-size: var(--step-2);
+  line-height: 1.7;
+  color: var(--text-body);
+}
+
+/* A small violet square rather than a bullet — echoes the nav dot */
+.legal-list li::before {
+  content: '';
+  position: absolute;
+  left: 2px;
+  top: 11px;
+  width: 7px;
+  height: 7px;
+  border-radius: 2px;
+  background: var(--violet-300);
+}
+
+.legal-link {
+  color: var(--violet-600);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-thickness: 1px;
+  transition: color var(--dur) var(--ease);
+}
+
+.legal-link:hover {
+  color: var(--violet-500);
+}
+
+.legal-note {
+  margin-top: 72px;
+  padding: 28px;
+  border-radius: 20px;
+  border: 1px solid var(--hairline);
+  background: var(--surface-raised);
+}
+
+.legal-note .legal-p {
+  margin-top: 12px;
 }
 
 /* ------------------------------------------------------------------ *

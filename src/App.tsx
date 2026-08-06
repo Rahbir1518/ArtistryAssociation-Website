@@ -21,8 +21,9 @@ const REDUCED_MOTION = '(prefers-reduced-motion: reduce)';
 /* Events slider geometry — kept in one place so the scroll maths and the CSS agree */
 const CARD_WIDTH = 420;
 const CARD_GAP = 32;
-const PARALLAX_RATES = [0.94, 1, 1.06];
-const LERP = 0.08;
+const LERP = 0.11;
+/* Extra pinned scroll after the track finishes, as a fraction of viewport height */
+const EVENTS_TAIL = 0.4;
 /* Ambient horizontal drift for the members row, in px per px of scroll */
 const DRIFT_RATE = 0.055;
 
@@ -93,8 +94,9 @@ function useScrollFrame(
   }, [ref, enabled]);
 }
 
-/* Fade + 24px rise at 15% intersection, once only */
-function useRevealOnScroll() {
+/* Fade + 24px rise at 15% intersection, once only. `key` re-runs the sweep when a
+   route swap mounts a fresh set of targets. */
+function useRevealOnScroll(key?: string) {
   useEffect(() => {
     const targets = Array.from(
       document.querySelectorAll<HTMLElement>('.reveal:not([data-visible="true"])')
@@ -114,7 +116,7 @@ function useRevealOnScroll() {
 
     targets.forEach((target) => observer.observe(target));
     return () => observer.disconnect();
-  }, []);
+  }, [key]);
 }
 
 // Navigation Component
@@ -132,11 +134,28 @@ function Navigation() {
     }
   });
 
+  /* Separate collapse / expand thresholds: a single one flips back and forth while
+     you hover around it, restarting the transition mid-flight. Reads sampled in a
+     rAF so a fast scroll cannot queue a state update per event. */
   useEffect(() => {
-    const onScroll = () => setIsScrolled(window.scrollY > 100);
-    onScroll();
+    let frame = 0;
+
+    const sample = () => {
+      frame = 0;
+      const y = window.scrollY;
+      setIsScrolled((collapsed) => (collapsed ? y > 60 : y > 140));
+    };
+
+    const onScroll = () => {
+      if (frame === 0) frame = requestAnimationFrame(sample);
+    };
+
+    sample();
     window.addEventListener('scroll', onScroll, { passive: true });
-    return () => window.removeEventListener('scroll', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(frame);
+    };
   }, []);
 
   // Apply theme to html and persist
@@ -181,8 +200,11 @@ function Navigation() {
       <header className="nav-shell">
         <nav className="nav-pill" data-scrolled={isScrolled} aria-label="Main">
           <a href="#" className="flex shrink-0 items-center gap-2.5">
-            <img src="/assets/mascot.png" alt="" className="h-9 w-9 object-contain" aria-hidden />
-            <span className="meta text-[13px] tracking-[0.18em]" style={{ color: 'var(--ink-900)' }}>
+            <img src="/assets/mascot.png" alt="" className="nav-logo" aria-hidden />
+            <span
+              className="meta nav-wordmark text-[13px] tracking-[0.18em]"
+              style={{ color: 'var(--ink-900)' }}
+            >
               Artistry
             </span>
             <span className="nav-dot" aria-hidden />
@@ -359,11 +381,7 @@ function FeaturedSection() {
       <div className="reveal mb-14 flex flex-col gap-10 lg:flex-row lg:items-end lg:justify-between">
         <div>
           <p className="eyebrow">Member submissions</p>
-          <h2 className="font-display text-section mt-5">
-            Imagin
-            <br />
-            ation
-          </h2>
+          <h2 className="font-display text-section mt-5">Imagination</h2>
         </div>
         <p className="body-lg max-w-md">
           A collective of illustrators, designers, and storytellers building worlds—one piece at a time.
@@ -516,7 +534,9 @@ function EventsSection() {
   const edgeRef = useRef<'start' | 'middle' | 'end'>('start');
   const [edge, setEdge] = useState<'start' | 'middle' | 'end'>('start');
 
-  /* Outer height = viewport + horizontal distance, so 1px of scroll = 1px of travel */
+  /* Outer height = viewport + horizontal distance + a tail. 1px of scroll still buys
+     1px of travel, but the tail holds the section pinned after the track has run out,
+     giving the eased position time to land on the last card before it unpins. */
   useEffect(() => {
     const section = sectionRef.current;
     const track = trackRef.current;
@@ -529,7 +549,8 @@ function EventsSection() {
 
     const measure = () => {
       distanceRef.current = Math.max(0, track.scrollWidth - window.innerWidth);
-      section.style.height = `${window.innerHeight + distanceRef.current}px`;
+      const tail = distanceRef.current > 0 ? window.innerHeight * EVENTS_TAIL : 0;
+      section.style.height = `${window.innerHeight + distanceRef.current + tail}px`;
     };
 
     measure();
@@ -550,24 +571,20 @@ function EventsSection() {
       const track = trackRef.current;
       if (!track) return;
 
+      /* Measured against the track distance, not the section height, so progress hits
+         1 with the tail still to scroll rather than at the instant of unpinning */
       const rect = section.getBoundingClientRect();
-      const travel = rect.height - window.innerHeight;
-      const target = travel > 0 ? clamp(-rect.top / travel, 0, 1) : 0;
+      const distance = distanceRef.current;
+      const target = distance > 0 ? clamp(-rect.top / distance, 0, 1) : 0;
 
       /* Glide toward the scroll position rather than snapping to it */
       let current = progressRef.current + (target - progressRef.current) * LERP;
       if (Math.abs(target - current) < 0.00005) current = target;
       progressRef.current = current;
 
-      const x = -distanceRef.current * current;
+      /* The whole track moves as one — per-card offsets read as misalignment, not depth */
+      const x = -distance * current;
       track.style.transform = `translate3d(${x}px, 0, 0)`;
-
-      /* Cards drift at slightly different rates for depth */
-      const cards = track.children;
-      for (let index = 0; index < cards.length; index += 1) {
-        const rate = PARALLAX_RATES[index % PARALLAX_RATES.length];
-        (cards[index] as HTMLElement).style.transform = `translate3d(${x * (rate - 1)}px, 0, 0)`;
-      }
 
       if (railRef.current) railRef.current.style.transform = `scaleX(${current})`;
 
@@ -858,8 +875,24 @@ function FooterSection() {
   };
 
   const columns = [
-    { title: 'Explore', links: ['Work', 'Events', 'Team', 'Members'] },
-    { title: 'Community', links: ['Submit Work', 'Open Calls', 'Code of Conduct', 'Privacy'] },
+    {
+      title: 'Explore',
+      links: [
+        { label: 'Work', href: '#featured' },
+        { label: 'Events', href: '#events' },
+        { label: 'Team', href: '#team' },
+        { label: 'Members', href: '#members' },
+      ],
+    },
+    {
+      title: 'Community',
+      links: [
+        { label: 'Submit Work', href: '#join' },
+        { label: 'Open Calls', href: '#events' },
+        { label: 'Code of Conduct', href: ROUTE_HASH.conduct },
+        { label: 'Privacy', href: ROUTE_HASH.privacy },
+      ],
+    },
   ];
 
   return (
@@ -901,7 +934,9 @@ function FooterSection() {
             ].map(({ Icon, label }) => (
               <a
                 key={label}
-                href="#"
+                href="https://www.instagram.com/artistryassociation"
+                target="_blank"
+                rel="noopener noreferrer"
                 aria-label={label}
                 className="inline-flex h-11 w-11 items-center justify-center rounded-full transition-colors duration-300"
                 style={{ border: '1px solid var(--hairline-on-dark)', color: 'var(--violet-300)' }}
@@ -919,9 +954,9 @@ function FooterSection() {
             </p>
             <ul className="mt-5 flex flex-col gap-3">
               {column.links.map((link) => (
-                <li key={link}>
-                  <a href="#" className="footer-link">
-                    {link}
+                <li key={link.label}>
+                  <a href={link.href} className="footer-link">
+                    {link.label}
                   </a>
                 </li>
               ))}
@@ -971,10 +1006,10 @@ function FooterSection() {
           © 2026 Artistry Association
         </p>
         <div className="flex gap-8">
-          <a href="#" className="footer-link">
+          <a href={ROUTE_HASH.privacy} className="footer-link">
             Privacy
           </a>
-          <a href="#" className="footer-link">
+          <a href={ROUTE_HASH.conduct} className="footer-link">
             Code of Conduct
           </a>
         </div>
@@ -983,9 +1018,268 @@ function FooterSection() {
   );
 }
 
+/* ------------------------------------------------------------------ *
+ * Legal pages — hash routed so they need no router dependency
+ * ------------------------------------------------------------------ */
+
+type Route = 'home' | 'conduct' | 'privacy';
+
+const ROUTE_HASH: Record<Exclude<Route, 'home'>, string> = {
+  conduct: '#/code-of-conduct',
+  privacy: '#/privacy',
+};
+
+const routeFromHash = (): Route => {
+  const hash = typeof window === 'undefined' ? '' : window.location.hash;
+  if (hash === ROUTE_HASH.conduct) return 'conduct';
+  if (hash === ROUTE_HASH.privacy) return 'privacy';
+  return 'home';
+};
+
+function useRoute() {
+  const [route, setRoute] = useState<Route>(routeFromHash);
+
+  useEffect(() => {
+    const onHashChange = () => {
+      const next = routeFromHash();
+      setRoute(next);
+
+      if (next !== 'home') {
+        window.scrollTo({ top: 0, behavior: 'auto' });
+        return;
+      }
+
+      /* Coming back to the home page from a legal page: the section the hash points
+         at is only mounted after this render, so the browser's own jump missed it */
+      const id = window.location.hash.slice(1);
+      if (!id) return;
+      requestAnimationFrame(() => {
+        document.getElementById(id)?.scrollIntoView({ behavior: 'auto', block: 'start' });
+      });
+    };
+
+    window.addEventListener('hashchange', onHashChange);
+    return () => window.removeEventListener('hashchange', onHashChange);
+  }, []);
+
+  return route;
+}
+
+type LegalSection = {
+  heading: string;
+  body?: string;
+  list?: string[];
+};
+
+type LegalContent = {
+  eyebrow: string;
+  title: string;
+  updated: string;
+  lede: string;
+  sections: LegalSection[];
+};
+
+const LEGAL_PAGES: Record<Exclude<Route, 'home'>, LegalContent> = {
+  conduct: {
+    eyebrow: 'Community standards',
+    title: 'Code of Conduct',
+    updated: 'Last updated 6 August 2026',
+    lede: 'Artistry Association is a room full of people making things in public. That only works if the room feels safe. Here is what we expect from each other—in the Discord, at events, in critique threads, and anywhere our name is on the door.',
+    sections: [
+      {
+        heading: 'The short version',
+        body: 'Be kind. Be honest. Be useful. Assume the person on the other side of the screen is trying, and treat their work-in-progress the way you would want yours treated.',
+      },
+      {
+        heading: 'What we expect',
+        list: [
+          'Lead with respect. Disagree with the work, never with the person.',
+          'Use the name and pronouns someone gives you. If you slip, correct it and move on.',
+          'Welcome beginners. Everyone posted a rough first drawing once.',
+          'Keep it clean in shared spaces—no slurs, no sexual content, no gore outside clearly labelled channels.',
+          'Ask before sharing. Someone else’s unfinished work, DMs, or personal details are theirs to post, not yours.',
+          'Give credit. Name your references, your collaborators, and your sources.',
+        ],
+      },
+      {
+        heading: 'Giving critique',
+        body: 'Critique is the reason most people are here, so we hold it to a standard.',
+        list: [
+          'Answer what was asked. If someone wants help with colour, do not rewrite their concept.',
+          'Be specific. "The values in the midground read flat" beats "something feels off".',
+          'Point at a fix, not just a flaw.',
+          'Skip the sandwich theatre—honest and warm is better than fake praise wrapped around a jab.',
+          'One critique per piece is plenty. Pile-ons are not feedback.',
+        ],
+      },
+      {
+        heading: 'Credit, copying, and AI',
+        list: [
+          'Post work you made. Studies and fan art are welcome—label them as such.',
+          'Tracing or repainting someone else’s piece without credit is not okay.',
+        ],
+      },
+      {
+        heading: 'Not okay here',
+        list: [
+          'Harassment, stalking, or repeated unwanted contact.',
+          'Hate speech or slurs of any kind, including "as a joke".',
+          'Sexual attention toward anyone, and any sexual content involving minors—instant and permanent removal.',
+          'Doxxing, screenshot-leaking, or sharing private conversations.',
+          'Art theft, plagiarism, or reselling another member’s work.',
+          'Spam, scams, unsolicited commission pitches in DMs, and self-promo dumped into critique threads.',
+        ],
+      },
+      {
+        heading: 'If something goes wrong',
+        body: 'Tell us. Email conduct@artistry.assoc or message any moderator—the ones with the violet dot. Reports go to a small group of organisers, we will not share your name with the person you reported without asking you first, and you will hear back within three days. Reporting something in good faith never counts against you, even if we end up disagreeing about the outcome.',
+      },
+      {
+        heading: 'What happens next',
+        body: 'Most issues end at a quiet word. Beyond that we escalate: a private warning, then a temporary mute or removal from events, then a permanent ban. Serious harm—threats, sexual content involving minors, targeted harassment—skips straight to the end. Decisions are made by at least two organisers, and you can appeal once by replying to the notice you receive.',
+      },
+      {
+        heading: 'Where this applies',
+        body: 'Everywhere Artistry Association operates: the Discord, critique nights, workshops, showcases, our social accounts, and member-run meetups that use our name. Behaviour elsewhere can still matter if it makes this community unsafe.',
+      },
+    ],
+  },
+  privacy: {
+    eyebrow: 'Your data',
+    title: 'Privacy Policy',
+    updated: 'Last updated 6 August 2026',
+    lede: 'We are an art community, not an advertising business. We collect the least we can get away with, we never sell it, and everything below is written to be read rather than skimmed past.',
+    sections: [
+      {
+        heading: 'The short version',
+        body: 'We keep your email so we can send you what you asked for, your submissions so we can show them, and rough traffic numbers so we know which pages work. That is it. No ad networks, no data brokers, no selling.',
+      },
+      {
+        heading: 'What we collect',
+        list: [
+          'Membership details you type in: name or handle, email address, and any links you choose to add.',
+          'Work you submit: images, titles, medium, and the caption you write with them.',
+          'Newsletter sign-ups: your email address and the date you subscribed.',
+          'Event RSVPs: which sessions you signed up for and whether you attended.',
+          'Basic usage data: pages viewed, approximate region, browser type, and referring site—aggregated, never tied to your name.',
+        ],
+      },
+      {
+        heading: 'What we do with it',
+        list: [
+          'Run the community: your account, your submissions, and your place at events.',
+          'Send the newsletter and occasional event reminders—only if you opted in.',
+          'Show your work on the site and our social accounts, always with your name and handle attached.',
+          'Understand which pages and events people actually use, so we build more of what works.',
+          'Enforce the Code of Conduct when we receive a report.',
+        ],
+      },
+      {
+        heading: 'What we never do',
+        body: 'We do not sell, rent, or trade your personal information. We do not run third-party advertising trackers. We do not build advertising profiles, and we do not share your email with other organisations for their own marketing.',
+      },
+      {
+        heading: 'Cookies and analytics',
+        body: 'We use a single cookie to remember your theme choice, and privacy-friendly analytics that count visits without cross-site tracking or fingerprinting. Nothing here follows you around the rest of the internet. Blocking cookies will not lock you out of the site—you will just get the light theme every time.',
+      },
+      {
+        heading: 'Who else touches your data',
+        body: 'Only the services we need to operate: our web host, our email delivery provider, our analytics provider, and Discord for the community itself. They process data on our instructions and are not allowed to use it for anything else. We will also disclose information if the law genuinely requires it.',
+      },
+      {
+        heading: 'How long we keep it',
+        list: [
+          'Newsletter emails: until you unsubscribe, then deleted within 30 days.',
+          'Member accounts: while your membership is active, plus 12 months after it lapses.',
+          'Submitted work: kept in the archive unless you ask us to remove it.',
+          'Analytics: aggregated after 14 months, with the raw records discarded.',
+          'Conduct reports: three years, so patterns of behaviour stay visible to moderators.',
+        ],
+      },
+      {
+        heading: 'Your artwork stays yours',
+        body: 'Submitting work gives us permission to display it on the site, in showcases, and on our social accounts with credit. It does not transfer copyright, it is not exclusive, and it is not permanent—ask and we will take a piece down.',
+      },
+      {
+        heading: 'Your choices',
+        list: [
+          'Unsubscribe from any newsletter using the link in its footer.',
+          'Ask for a copy of everything we hold about you.',
+          'Ask us to correct anything that is wrong.',
+          'Ask us to delete your account, your data, or a single submission.',
+          'Object to a use you are not comfortable with, and we will stop or explain why we cannot.',
+        ],
+      },
+      {
+        heading: 'Age',
+        body: 'The community is intended for people aged 13 and over. If you are under 16, please ask a parent or guardian before you sign up. If we learn we are holding data for a child under 13, we delete it.',
+      },
+      {
+        heading: 'Changes',
+        body: 'If we change anything that materially affects you, we will update the date at the top of this page and send a note to the newsletter. Small clarifications get the date change alone.',
+      },
+      {
+        heading: 'Contact',
+        body: 'Questions, requests, or corrections: privacy@artistry.assoc. A real person reads that inbox and we aim to reply within 30 days.',
+      },
+    ],
+  },
+};
+
+function LegalPage({ page }: { page: LegalContent }) {
+  return (
+    <article className="legal-shell">
+      <a href="#" className="legal-back">
+        <ChevronLeft className="h-3.5 w-3.5" aria-hidden />
+        Back to Artistry
+      </a>
+
+      <header className="legal-head">
+        <p className="eyebrow" style={{ color: 'var(--violet-600)' }}>
+          {page.eyebrow}
+        </p>
+        <h1 className="font-display text-section mt-5">{page.title}</h1>
+        <p className="meta mt-5">{page.updated}</p>
+        <p className="body-lg mt-7">{page.lede}</p>
+      </header>
+
+      {page.sections.map((section, index) => (
+        <section key={section.heading} className="legal-section">
+          <p className="eyebrow legal-index" aria-hidden>
+            {String(index + 1).padStart(2, '0')}
+          </p>
+          <h2 className="legal-h">{section.heading}</h2>
+          {section.body && <p className="legal-p">{section.body}</p>}
+          {section.list && (
+            <ul className="legal-list">
+              {section.list.map((item) => (
+                <li key={item}>{item}</li>
+              ))}
+            </ul>
+          )}
+        </section>
+      ))}
+
+      <aside className="legal-note">
+        <p className="eyebrow" style={{ color: 'var(--violet-600)' }}>
+          Questions
+        </p>
+        <p className="legal-p mt-3">
+          Anything unclear, or something you want changed? Write to{' '}
+          <a href="mailto:hello@artistry.assoc" className="legal-link">
+            hello@artistry.assoc
+          </a>{' '}
+          and a person—not a form—will answer.
+        </p>
+      </aside>
+    </article>
+  );
+}
+
 // Main App
 function App() {
-  useRevealOnScroll();
+  const route = useRoute();
+  useRevealOnScroll(route);
 
   return (
     <div className="relative min-h-screen" style={{ background: 'var(--surface)' }}>
@@ -998,14 +1292,20 @@ function App() {
 
       <Navigation />
 
-      <main className="relative">
-        <HeroSection />
-        <FeaturedSection />
-        <EventsSection />
-        <TeamSection />
-        <MembersSection />
-        <JoinSection />
-      </main>
+      {route === 'home' ? (
+        <main className="relative">
+          <HeroSection />
+          <FeaturedSection />
+          <EventsSection />
+          <TeamSection />
+          <MembersSection />
+          <JoinSection />
+        </main>
+      ) : (
+        <main className="relative">
+          <LegalPage page={LEGAL_PAGES[route]} />
+        </main>
+      )}
 
       <FooterSection />
     </div>
