@@ -3,18 +3,37 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#F4F3FA" />
     <title>Artistry Association</title>
+    <meta
+      name="description"
+      content="Artistry Association is an online community of illustrators, designers, and storytellers. Submit your work, join critique nights, and see January's Art of the Month."
+    />
+    <link rel="icon" href="./assets/mascot.png" />
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      rel="preload"
+      as="style"
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
+    <link
+      rel="stylesheet"
+      href="https://fonts.googleapis.com/css2?family=Archivo+Black&family=Inter:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap"
+    />
     <script>
       (function () {
         try {
-          var t = localStorage.getItem('theme');
-          if (t === 'light') document.documentElement.classList.remove('dark');
-          else document.documentElement.classList.add('dark');
+          if (localStorage.getItem('theme') === 'dark') {
+            document.documentElement.classList.add('dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+          }
         } catch (e) {}
       })();
     </script>
-    <script type="module" crossorigin src="./assets/index-1TtXnEbe.js"></script>
-    <link rel="stylesheet" crossorigin href="./assets/index-BmusBFwq.css">
+    <script type="module" crossorigin src="./assets/index-BzoIw_9o.js"></script>
+    <link rel="stylesheet" crossorigin href="./assets/index-1MzUP1HX.css">
   </head>
   <body>
     <div id="root"></div>
